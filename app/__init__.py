@@ -15,4 +15,12 @@ def create_app():
     from . import db
     db.init_app(app)
 
+    # Adding the authentification blueprint 
+    from app.authentification import bp as authentification
+    api.register_blueprint(authentification)
+
+    # Adding users implementations
+    from app.users import bp as users
+    api.register_blueprint(users)
+    
     return app

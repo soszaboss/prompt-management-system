@@ -1,9 +1,13 @@
 import marshmallow as ma
 
-class UserShema(ma.Schema):
-    id = ma.fields.Integer()
-    username = ma.fields.String(required=True)
-    email = ma.fields.Email(required=True)
-    password = ma.fields.String(required=True)
-    confirm_password = ma.fields.String(required=True)
-    role_id = ma.fields.Integer(required=True)
+class UserSchema(ma.Schema):
+    id = ma.fields.Integer(dump_only=True)
+    username = ma.fields.String(required=True, error_messages={"required": {"message": "Username required", "code": 400}})
+    email = ma.fields.Email(required=True, error_messages={"required": {"message": "Email required", "code": 400}})
+    password = ma.fields.String(required=True, load_only=True)
+    confirm_password = ma.fields.String(required=True, load_only=True)
+    role = ma.fields.String(dump_only=True)
+
+class LoginShema(ma.Schema):
+    email = ma.fields.Email(required=True, error_messages={"required": {"message": "Email required", "code": 400}})
+    password = ma.fields.String(required=True, error_messages={"required": {"message": "Password required", "code": 400}})

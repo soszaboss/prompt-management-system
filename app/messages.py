@@ -1,4 +1,4 @@
 import marshmallow as ma
 
 class Message(ma.Schema):
-    message = ma.fields.String()
+    message = ma.fields.String(required=True)

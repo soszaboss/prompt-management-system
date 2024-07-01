@@ -1,6 +1,6 @@
 
 BEGIN;
-    DROP TABLE IF EXISTS roles, users, statuts, prompts;
+    DROP TABLE IF EXISTS roles, users, statuts, prompts, groupes, groupes_users CASCADE;
 -- Create roles table
     CREATE TABLE roles (
         id SERIAL PRIMARY KEY,
@@ -47,6 +47,7 @@ BEGIN;
                             username VARCHAR(25) UNIQUE,
                             email VARCHAR(50) UNIQUE, 
                             password TEXT NOT NULL,
+                            is_activated BOOLEAN DEFAULT FALSE,
                             role_id INT NOT NULL DEFAULT 3,
                             CONSTRAINT fk_roles_users FOREIGN KEY (role_id) REFERENCES roles(id)
                         );

@@ -53,9 +53,30 @@ def create_app():
     def token_in_blocklist_callback(jwt_header,jwt_data):
         jti = jwt_data['jti']
         db = get_db()
-        token = db.execute("select get_jti_or_none(%s)", (jti,)).fetchone()['get_jti_or_none']
+        query = db.execute("select get_jti_or_none(%s)", (jti,)).fetchone()
+        if query is None:
+            token = None
+        else:
+            token = query['get_jti_or_none']
+
         # token = db.session.query(TokenBlocklist).filter(TokenBlocklist.jti == jti).scalar()
 
         return token is not None
+    
+    # load user
+    @jwt.user_lookup_loader
+    def user_lookup_callback(jwt_header, jwt_data):
+        id = int(jwt_data['sub'])
+        db = get_db()
+        user = db.execute("select get_user_by_id(%s);", (id,)).fetchone()['get_user_by_id']
+        return user if user else None
 
+    @jwt.additional_claims_loader
+    def make_additionnal_claim(identity):
+        id = int(identity)
+        db = get_db()
+        user_role = db.execute("select get_user_by_id(%s);", (id,)).fetchone()['get_user_by_id'][2]
+        context = {'user_role': user_role}
+        return context
+    
     return app

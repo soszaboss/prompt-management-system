@@ -7,12 +7,13 @@ from app.authentification.schema import UserSchema
 from flask.views import MethodView
 from app.users.schema import UserCrendentialsSchema
 from flask_jwt_extended import jwt_required
-
+from app.decorator import user_role
 # End point to update and delete an user
 @bp.route('/user/<int:id>')
 class User(MethodView):
     @bp.response(status_code=204, schema=Message, description='Message shows user is deleted successfuly.')
     @jwt_required()
+    @user_role('admin')
     def delete(self, id):
         db = get_db()
         user = db.execute("SELECT * FROM users WHERE id = %s;", (id,)).fetchone()
@@ -25,6 +26,7 @@ class User(MethodView):
     @bp.arguments(UserCrendentialsSchema, location='json', description='Update user.', as_kwargs=True)
     @bp.response(status_code=200, schema=Message, description='Sending update')
     @jwt_required()
+    @user_role('admin')
     def put(self, id, **kwargs):
         try:
             username = kwargs.get("username")
@@ -54,11 +56,36 @@ class User(MethodView):
             return jsonify(message='Account updated successfuly.'), 200
         else:
             abort(400, message='Empty fields.')
+    
+    @bp.response(status_code=200, schema=UserSchema, description='Message shows user details.')
+    @jwt_required()
+    @user_role('admin')
+    def get(self, id):
+        db = get_db()
+        user = db.execute("SELECT u.id, u.username, u.email,\
+                   CASE \
+                       WHEN u.role_id = 1 THEN 'admin' \
+                       WHEN u.role_id = 2 THEN 'user' \
+                       ELSE 'guest' \
+                   END as role\
+                   FROM users u where id = %s;", (id,)).fetchall()
+        if user is None:
+            abort(404, message='User does not exist')
+        else:
+            return user
 
 @bp.route('/')
 @bp.response(200, UserSchema(many=True))
 @jwt_required()
+@user_role('admin')
 def get_users():
     db = get_db()
-    users = db.execute("SELECT * FROM users;").fetchall()
+    users = db.execute("SELECT u.id, u.username, u.email,\
+                   CASE \
+                       WHEN u.role_id = 1 THEN 'admin' \
+                       WHEN u.role_id = 2 THEN 'user' \
+                       ELSE 'guest' \
+                   END as role\
+                   FROM users u;").fetchall()
+
     return users

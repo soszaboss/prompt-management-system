@@ -154,7 +154,7 @@ BEGIN;
                         user_id INT,
                         user_username VARCHAR(25),
                         user_email VARCHAR(50),
-                        user_role_id TEXT
+                        user_role TEXT
                     )
     LANGUAGE plpgsql
     AS $$

@@ -2,7 +2,7 @@ from app.authentification import bp
 from flask import jsonify
 from flask_smorest import abort
 from app.messages import Message
-from app.db import get_db
+from app.db import get_db, validate_password
 from .schema import UserSchema, LoginShema
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_jwt_extended import create_access_token, create_refresh_token
@@ -11,18 +11,7 @@ import re
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 
 
-def validate_password(password):
-    '''
-        regex pattern that checks if a password meets the following requirements:
 
-        At least 12 characters in length.
-        Contains at least one uppercase letter.
-        Contains at least one lowercase letter.
-        Contains at least one digit (number).
-        Contains at least one special character (e.g., !, @, #, $, %, etc.).
-    '''
-    pattern = r"^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@#$%^&*])[A-Za-z\d@#$%^&*]{12,}$"
-    return bool(re.match(pattern, password))
 
 @bp.route('/register', methods=['POST'])
 @bp.arguments(UserSchema, location='json', description='Registring user.', as_kwargs=True)
@@ -60,7 +49,6 @@ def login(**kwargs):
         user = db.execute("select *from users where email = %s;", (email,)).fetchone()
         print(user)
         if user is None:
-            print('pas autorisé')
             abort(404, message='User does not exist.')
         else:
             hashed_password = user['password']
@@ -89,11 +77,10 @@ def refresh_token():
 
 @bp.route('/logout', methods=['GET'])
 @bp.response(status_code=200, schema=Message, description='logout user with a message')
-@jwt_required(refresh=True)
+@jwt_required()
 def logout():
     db = get_db()
-    jwt = get_jwt()
-    jti = jwt['jti']
+    jti = get_jwt()['jti']
     db.execute("insert into tokens_block_list(jti) values (%s)", (jti,))
     return jsonify({'message': 'logout successfuly'}), 200
 

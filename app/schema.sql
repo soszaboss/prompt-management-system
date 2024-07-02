@@ -1,6 +1,6 @@
 
 BEGIN;
-    DROP TABLE IF EXISTS roles, users, statuts, prompts, groupes, groupes_users CASCADE;
+    DROP TABLE IF EXISTS roles, users, tokens_block_list, statuts, prompts, groupes, groupes_users CASCADE;
 -- Create roles table
     CREATE TABLE roles (
         id SERIAL PRIMARY KEY,
@@ -52,6 +52,11 @@ BEGIN;
                             CONSTRAINT fk_roles_users FOREIGN KEY (role_id) REFERENCES roles(id)
                         );
 
+    CREATE TABLE tokens_block_list(
+        id SERIAL PRIMARY KEY,
+        jti VARCHAR UNIQUE, 
+        create_at DATE DEFAULT CURRENT_TIMESTAMP
+    );
     -- Create prompts table
     CREATE TABLE prompts (
                             id SERIAL PRIMARY KEY,
@@ -114,6 +119,23 @@ BEGIN;
                     END
                 FROM users u
                 WHERE u.id = user_id;
+
+            IF NOT FOUND THEN
+                RETURN ;
+            END IF;
+        END;
+        $$
+        LANGUAGE plpgsql;
+
+    CREATE OR REPLACE FUNCTION get_jti_or_none(token VARCHAR)
+        RETURNS TABLE (blocked_token VARCHAR)
+        AS $$
+        BEGIN
+            RETURN QUERY
+                SELECT
+                    t.jti
+                FROM tokens_block_list t
+                WHERE t.jti = token;
 
             IF NOT FOUND THEN
                 RETURN ;

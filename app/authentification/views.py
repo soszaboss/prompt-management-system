@@ -8,6 +8,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from flask_jwt_extended import create_access_token, create_refresh_token
 from flask.views import MethodView
 import re
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 
 
 def validate_password(password):
@@ -23,10 +24,10 @@ def validate_password(password):
     pattern = r"^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@#$%^&*])[A-Za-z\d@#$%^&*]{12,}$"
     return bool(re.match(pattern, password))
 
-
 @bp.route('/register', methods=['POST'])
 @bp.arguments(UserSchema, location='json', description='Registring user.', as_kwargs=True)
 @bp.response(status_code=201, schema=Message, description='sending message after a registring attemp')
+@jwt_required()
 def register(**kwargs):
         username = kwargs.get("username").strip()
         email = kwargs.get("email").strip()
@@ -51,7 +52,7 @@ def register(**kwargs):
     
 @bp.route('/login', methods=['POST'])
 @bp.arguments(LoginShema, location='json', description='log an user.', as_kwargs=True)
-@bp.response(status_code=201, schema=Message, description='sending message after a registring attemp')
+@bp.response(status_code=201, schema=Message, description='sending message after a login attemp')
 def login(**kwargs):
         email = kwargs.get("email")
         password = kwargs.get("password")
@@ -77,4 +78,22 @@ def login(**kwargs):
             else:
                 abort(401, message='Invalid password.')
 
+
+@bp.route('/refresh-token', methods=['GET'])
+@bp.response(status_code=200, schema=Message, description='sending message after rquest for new access token')
+@jwt_required(refresh=True)
+def refresh_token():
+    id = int(get_jwt_identity())
+    new_access_token = create_access_token(identity=id)
+    return jsonify({'new_access_token':new_access_token}), 200
+
+@bp.route('/logout', methods=['GET'])
+@bp.response(status_code=200, schema=Message, description='logout user with a message')
+@jwt_required(refresh=True)
+def logout():
+    db = get_db()
+    jwt = get_jwt()
+    jti = jwt['jti']
+    db.execute("insert into tokens_block_list(jti) values (%s)", (jti,))
+    return jsonify({'message': 'logout successfuly'}), 200
 

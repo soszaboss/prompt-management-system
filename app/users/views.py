@@ -7,13 +7,13 @@ from app.authentification.schema import UserSchema
 from flask.views import MethodView
 from app.users.schema import UserCrendentialsSchema
 from flask_jwt_extended import jwt_required
-from app.decorator import user_role
+from app.decorators import user_allowed
 # End point to update and delete an user
 @bp.route('/user/<int:id>')
 class User(MethodView):
     @bp.response(status_code=204, schema=Message, description='Message shows user is deleted successfuly.')
     @jwt_required()
-    @user_role('admin')
+    @user_allowed('admin')
     def delete(self, id):
         db = get_db()
         user = db.execute("SELECT * FROM users WHERE id = %s;", (id,)).fetchone()
@@ -26,7 +26,7 @@ class User(MethodView):
     @bp.arguments(UserCrendentialsSchema, location='json', description='Update user.', as_kwargs=True)
     @bp.response(status_code=200, schema=Message, description='Sending update')
     @jwt_required()
-    @user_role('admin')
+    @user_allowed('admin')
     def put(self, id, **kwargs):
         try:
             username = kwargs.get("username")
@@ -59,7 +59,7 @@ class User(MethodView):
     
     @bp.response(status_code=200, schema=UserSchema, description='Message shows user details.')
     @jwt_required()
-    @user_role('admin')
+    @user_allowed('admin')
     def get(self, id):
         db = get_db()
         user = db.execute("SELECT u.id, u.username, u.email,\
@@ -77,7 +77,7 @@ class User(MethodView):
 @bp.route('/')
 @bp.response(200, UserSchema(many=True))
 @jwt_required()
-@user_role('admin')
+@user_allowed('admin')
 def get_users():
     db = get_db()
     users = db.execute("SELECT u.id, u.username, u.email,\

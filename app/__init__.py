@@ -1,5 +1,5 @@
 from .config import Config
-from .extensions import api, jwt
+from .extensions import api, jwt, mail
 from .db import get_db
 from flask import Flask, jsonify
 
@@ -10,6 +10,7 @@ def create_app():
 
     api.init_app(app)
     jwt.init_app(app)
+    mail.init_app(app)
 
     from . import db
     db.init_app(app)
@@ -23,6 +24,14 @@ def create_app():
     from app.users import bp as users
     api.register_blueprint(users)
     
+    # Adding groupes implementations
+    from app.groupes import bp as groupes
+    api.register_blueprint(groupes)
+
+    # Adding prompts implementations
+    from app.prompts import bp as prompts
+    api.register_blueprint(prompts)
+
     # jwt error handlers
     @jwt.expired_token_loader
     def expired_token_callback(jwt_header, jwt_data):

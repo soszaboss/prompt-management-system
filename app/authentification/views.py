@@ -1,14 +1,13 @@
 from app.authentification import bp
-from flask import jsonify
+from flask import jsonify, request
 from flask_smorest import abort
 from app.messages import Message
 from app.db import get_db, validate_password
 from .schema import UserSchema, LoginShema
 from werkzeug.security import check_password_hash, generate_password_hash
-from flask_jwt_extended import create_access_token, create_refresh_token
-from flask.views import MethodView
-import re
+from flask_jwt_extended import create_access_token, create_refresh_token, decode_token
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
+from app.send_email import send_activation_email
 
 
 
@@ -16,7 +15,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 @bp.route('/register', methods=['POST'])
 @bp.arguments(UserSchema, location='json', description='Registring user.', as_kwargs=True)
 @bp.response(status_code=201, schema=Message, description='sending message after a registring attemp')
-@jwt_required()
+# @jwt_required()
 def register(**kwargs):
         username = kwargs.get("username").strip()
         email = kwargs.get("email").strip()
@@ -33,8 +32,12 @@ def register(**kwargs):
             else:
                 if validate_password(password=password):
                     hashed_password = generate_password_hash(password=password)
-                    db.execute("select create_get_user(%s, %s, %s, %s);", (username, email, hashed_password, 2)).fetchone()['create_get_user'][1::]
-                    return jsonify(message='Account created successfully. Please check your email to activate your account.'), 201
+                    user = db.execute("select create_get_user(%s, %s, %s, %s);", (username, email, hashed_password, 2)).fetchone()['create_get_user']
+                    user_id = int(user[0])
+                    domain = request.url_root
+                    print(f'this is the domain: {domain}')
+                    send_activation_email(user_id=user_id, email=email)
+                    return jsonify(message='Account created successfully. Please check your email to activate your account or your account will be automatically deleted in 15 minuites.'), 201
                 else:
                      abort(400, message="Invalid password format, Minimum length, uppercase, lowercase, digit, and special character.")
 
@@ -84,3 +87,20 @@ def logout():
     db.execute("insert into tokens_block_list(jti) values (%s)", (jti,))
     return jsonify({'message': 'logout successfuly'}), 200
 
+
+@bp.route('/activate/<token>', methods=['GET'])
+def activate(token):
+    db = get_db()
+    try:
+        id = int(decode_token(token)['sub'])
+        try:
+            user = db.execute("select get_user_by_id(%s);", (id,)).fetchone()['get_user_by_id']
+        except:
+            user = None
+        if user is not None:
+            db.execute("UPDATE users SET is_activated = TRUE WHERE id = %s;", (id,))
+            return jsonify(message="Account activated successfully."), 200
+        else:
+            return jsonify(message="Invalid activation link."), 400
+    except Exception as e:
+        return jsonify(message="Activation link expired or invalid."), 400

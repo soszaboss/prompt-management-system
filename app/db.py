@@ -6,6 +6,8 @@ from psycopg.rows import dict_row
 from werkzeug.security import generate_password_hash
 import click
 from flask import current_app, g
+from .send_email import send_activation_email
+
 
 dotenv.load_dotenv()
 
@@ -60,24 +62,24 @@ def is_valid_email(email):
     return re.match(pattern, email)
 
 def validate_password(password):
-    '''
-        regex pattern that checks if a password meets the following requirements:
-
-        At least 12 characters in length.
-        Contains at least one uppercase letter.
-        Contains at least one lowercase letter.
-        Contains at least one digit (number).
-        Contains at least one special character (e.g., !, @, #, $, %, etc.).
-    '''
+    """
+    Regex pattern that checks if a password meets the following requirements:
+    - At least 12 characters in length.
+    - Contains at least one uppercase letter.
+    - Contains at least one lowercase letter.
+    - Contains at least one digit (number).
+    - Contains at least one special character (e.g., !, @, #, $, %, etc.).
+    """
     pattern = r"^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@#$%^&*])[A-Za-z\d@#$%^&*]{12,}$"
     return bool(re.match(pattern, password))
 
-def user_input(field: str, password:bool=False) -> str:
+def user_input(field: str, password: bool = False) -> str:
     """
     Prompt the user for input and validate it.
 
     Args:
         field (str): The field name (e.g., 'username', 'email').
+        password (bool): Whether the input is for a password.
 
     Returns:
         str: The validated user input.
@@ -86,54 +88,56 @@ def user_input(field: str, password:bool=False) -> str:
         if password:
             result = getpass(prompt=f'{field}: ')
             if not result:
-                result = getpass(prompt=f'{field}: ')
+                print(f'{field} cannot be empty. Please try again.')
             else:
                 return result
         else:
-            result = input(f'{field} : ').strip()
+            result = input(f'{field}: ').strip()
             if not result:
-                result = input(f'{field} : ').strip()
+                print(f'{field} cannot be empty. Please try again.')
             else:
+                db = get_db()
                 if field == 'username':
-                    db = get_db()
-                    exist = db.execute("SELECT u.username FROM users u WHERE u.username = %s;", (result, )).fetchone()
+                    exist = db.execute("SELECT username FROM users WHERE username = %s;", (result,)).fetchone()
                     if exist:
-                        print(f'Attention: {result} already used.')
-                        user_input(field=field, password=password)
+                        print(f'Attention: {result} is already used. Please choose another username.')
                     else:
                         return result
-                elif (field == 'email' and is_valid_email(result)):
-                    db = get_db()
-                    exist = db.execute("SELECT u.email FROM users u WHERE u.email = %s;", (result, )).fetchone()
-                    if exist:
-                        print(f'Attention: {result} already used.')
-                        user_input(field=field, password=password)
+                elif field == 'email':
+                    if is_valid_email(result):
+                        exist = db.execute("SELECT email FROM users WHERE email = %s;", (result,)).fetchone()
+                        if exist:
+                            print(f'Attention: {result} is already used. Please choose another email.')
+                        else:
+                            return result
                     else:
-                        return result
-                
-
-
-
+                        print('Invalid email format. Please try again.')
 
 @click.command('create-admin')
 def create_admin_user():
     username = user_input('username')
     email = user_input('email')
-    print('Password has to contain:\n\
-            At least 12 characters in length.\n\
-            Contains at least one uppercase letter.\n\
-            Contains at least one lowercase letter.\n\
-            Contains at least one digit (number).\n\
-            Contains at least one special character (e.g., !, @, #, $, %, etc.)')
-    password = user_input('password', password=True)
-    confirm_password = user_input('confirm password', password=True)
-    if password != confirm_password:
-            raise ValueError('Password not conform.')
-    else:
-        db = get_db()
-        hashed_password = generate_password_hash(password=password)
-        db.execute('insert into users(username, email, password, role_id) values(%s, %s, %s, %s);', (username, email, hashed_password, 1))
-        print(f'User {username} create successfully')
+    print('Password must contain:\n\
+            - At least 12 characters in length.\n\
+            - At least one uppercase letter.\n\
+            - At least one lowercase letter.\n\
+            - At least one digit (number).\n\
+            - At least one special character (e.g., !, @, #, $, %, etc.)')
+    while True:
+        password = user_input('password', password=True)
+        if not validate_password(password):
+            print('Password does not meet the criteria. Please try again.')
+            continue
+        confirm_password = user_input('confirm password', password=True)
+        if password != confirm_password:
+            print('Passwords do not match. Please try again.')
+        else:
+            break
+
+    db = get_db()
+    hashed_password = generate_password_hash(password)
+    user = db.execute("insert into users(username, email, password, role) values(%s, %s, %s, %s);", (username, email, hashed_password, 1))
+    print(f'User {username} account created successfully. Please check your email {email} to activate your account or it will be automatically deleted in 24 hours.')
 
 
        

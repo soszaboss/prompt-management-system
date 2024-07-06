@@ -68,7 +68,7 @@ class User(MethodView):
                        WHEN u.role_id = 2 THEN 'user' \
                        ELSE 'guest' \
                    END as role\
-                   FROM users u where id = %s;", (id,)).fetchall()
+                   FROM users u where id = %s;", (id,)).fetchone()
         if user is None:
             abort(404, message='User does not exist')
         else:

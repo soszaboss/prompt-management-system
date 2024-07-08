@@ -87,14 +87,6 @@ def create_app():
         user_role = db.execute("select get_user_by_id(%s);", (id,)).fetchone()['get_user_by_id'][2]
         context = {'user_role': user_role}
         return context
-    @app.route("/")
-    def index():
-        msg = Message(
-            subject='Hello from the other side!',
-            recipients=['kamalmoustoifa@gmail.com'],
-            body="Hey, sending you this email from my Flask app, let me know if it works."
-        )
-        mail.send(msg)
-        return jsonify({"message": "Message sent!"}), 200
+
     
     return app

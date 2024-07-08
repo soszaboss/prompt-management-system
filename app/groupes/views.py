@@ -5,7 +5,7 @@ from app.messages import Message
 from app.db import get_db
 from app.groupes.schema import GroupeSchema
 from flask.views import MethodView
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt
 from app.decorators import user_allowed
 
 @bp.route('/groupe/<int:id>')
@@ -29,7 +29,7 @@ class Groupe(MethodView):
     def put(self, id, **kwargs):
         db = get_db()
         name = kwargs.get("name")
-        description = kwargs.get("description")
+        description = kwargs.get("description", None)
         if name:
             if db.execute("SELECT * FROM groupes WHERE name = %s;", (name,)).fetchone():
                 abort(409, message='Name already used.')
@@ -44,17 +44,33 @@ class Groupe(MethodView):
     @user_allowed('admin')
     def get(self, id):
         db = get_db()
-        groupe = db.execute("SELECT id, name, description, created_by FROM groupes WHERE id = %s;", (id,)).fetchone()
+        groupe = db.execute("SELECT *from groupes WHERE id = %s;", (id,)).fetchone()
         if groupe is None:
             abort(404, message='Groupe does not exist')
         else:
             return groupe
 
-@bp.route('/')
+@bp.route('/', methods=['GET'])
 @bp.response(200, GroupeSchema(many=True))
 @jwt_required()
 @user_allowed('admin')
 def get_groupes():
     db = get_db()
-    groupes = db.execute("SELECT id, name, description, created_by FROM groupes;").fetchall()
+    groupes = db.execute("SELECT *FROM groupes;").fetchall()
     return groupes
+
+@bp.route('/groupe/add', methods=['POST'])
+@bp.arguments(GroupeSchema, location='json', description='Add groupe.', as_kwargs=True)
+@jwt_required()
+@user_allowed('admin')
+def add_groupe(**kwargs):
+    db = get_db()
+    name = kwargs.get("name")
+    description = kwargs.get("description", None)
+    created_by = int(get_jwt()['sub'])
+    try:
+        db.execute("insert into groupes (name, description, created_by) values (%s, %s, %s);", (name, description, created_by,))
+    except:
+        abort(409, message='Name already used.')
+    else:
+        return jsonify({'message': 'Groupe added successfully'}), 201

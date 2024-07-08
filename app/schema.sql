@@ -299,6 +299,7 @@ BEGIN
 END;
 $$;
 
+                                -- Others custom Fonctions
 -- Fonction pour obtenir un enregistrement par ID depuis une table donnée
 CREATE OR REPLACE FUNCTION get_row_by_id(table_name TEXT, row_id INT)
 RETURNS JSON
@@ -321,6 +322,24 @@ BEGIN
     RETURN NEW;
 END;
 $$;
+
+CREATE OR REPLACE FUNCTION get_jti_or_none(token VARCHAR)
+        RETURNS TABLE (blocked_token VARCHAR)
+        AS $$
+        BEGIN
+            RETURN QUERY
+                SELECT
+                    t.jti
+                FROM tokens_block_list t
+                WHERE t.jti = token;
+
+            IF NOT FOUND THEN
+                RETURN ;
+            END IF;
+        END;
+        $$
+        LANGUAGE plpgsql;
+
 
 -- Triggers pour mettre à jour le timestamp updated_at lors d'une modification
 CREATE TRIGGER set_timestamp_users

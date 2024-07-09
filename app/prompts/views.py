@@ -4,87 +4,153 @@ from flask_smorest import abort
 from app.db import get_db
 from app.prompts.schema import PromptSchema
 from flask.views import MethodView
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt
 from app.decorators import user_allowed
 
 # Endpoint pour gérer les prompts
-@bp.route('/<int:id>')
+@bp.route('/prompt/<int:id>')
 class Prompt(MethodView):
-    @bp.response(200, PromptSchema)
+    @bp.response(200, description='Get prompt by id.')
     @jwt_required()
     def get(self, id):
         db = get_db()
         prompt = db.execute(
-            "SELECT p.id, p.prompt, s.statut, u.username "
-            "FROM prompts p "
-            "JOIN statuts s ON p.statut_id = s.id "
-            "JOIN users u ON p.user_id = u.id "
-            "WHERE p.id = %s;", (id,)
+           "SELECT\
+            p.id,\
+            p.prompt,\
+            u.username,\
+            s.id AS statut_id,\
+            s.statut AS statut\
+            FROM prompts p\
+            JOIN users u ON p.user_id = u.id\
+            JOIN statuts s ON p.statut_id = s.id\
+            WHERE p.id = %s;", (id,)
         ).fetchone()
         if prompt is None:
             abort(404, message='Prompt does not exist')
         return prompt
 
-    @bp.arguments(PromptSchema)
-    @bp.response(201, PromptSchema)
-    @jwt_required()
-    def post(self, new_prompt):
-        db = get_db()
-        db.execute(
-            "INSERT INTO prompts (prompt, user_id, statut_id) VALUES (%s, %s, %s);",
-            (new_prompt['prompt'], new_prompt['user_id'], new_prompt['statut_id'])
-        )
-        return new_prompt, 201
-
-    @bp.response(204, description='Prompt successfully deleted')
+    @bp.response(204, description='Prompt successfully deleted.')
     @jwt_required()
     @user_allowed('admin')
     def delete(self, id):
-        db = get_db()
-        prompt = db.execute("SELECT * FROM prompts WHERE id = %s;", (id,)).fetchone()
-        if prompt is None:
-            abort(404, message='Prompt does not exist')
-        db.execute("DELETE FROM prompts WHERE id = %s;", (id,))
-        return '', 204
+        try:
+            db = get_db()
+            prompt = db.execute("SELECT * FROM prompts WHERE id = %s;", (id,)).fetchone()
+            if prompt is None:
+                abort(404, message='Prompt does not exist')
+            db.execute("DELETE FROM prompts WHERE id = %s;", (id,))
+            return '', 204
+        except:
+            abort(500, message='Try later...')
 
-    @bp.arguments(PromptSchema)
-    @bp.response(200, PromptSchema)
+    @bp.arguments(PromptSchema, location='json', description='Update prompt.', as_kwargs=True)
     @jwt_required()
     @user_allowed('admin')
-    def put(self, id, updated_prompt):
-        db = get_db()
-        db.execute(
-            "UPDATE prompts SET prompt = %s, statut_id = %s, updated_at = NOW() WHERE id = %s;",
-            (updated_prompt['prompt'], updated_prompt['statut_id'], id)
-        )
-        return updated_prompt
+    def put(self, id, **kwargs):
+        try:
+            prompt = kwargs.get('prompt')
+            statut_id = kwargs.get('statut_id', None)
+            db = get_db()
+            if prompt and statut_id:
+                db.execute(
+                            "UPDATE prompts SET prompt = %s, statut_id = %s, updated_at = NOW() WHERE id = %s;",
+                            (prompt, statut_id, id)
+                        )
+            elif prompt and statut_id is None:
+                db.execute(
+                            "UPDATE prompts SET prompt = %s, updated_at = NOW() WHERE id = %s;",
+                            (prompt, id)
+                        )
+            else:
+                abort(400, message='Prompt does not exist.')
+        except:
+            abort(500, message='Try later...')
+        else:
+            return jsonify({'message': 'Prompt updated successfully'}), 200
 
 # Endpoint pour afficher les prompts par statut
 @bp.route('/status/<int:status_id>')
-@bp.response(200, PromptSchema(many=True))
 @jwt_required()
 def get_prompts_by_status(status_id):
-    db = get_db()
-    prompts = db.execute(
-        "SELECT p.id, p.prompt, s.statut, u.username "
-        "FROM prompts p "
-        "JOIN statuts s ON p.statut_id = s.id "
-        "JOIN users u ON p.user_id = u.id "
-        "WHERE p.statut_id = %s;", (status_id,)
-    ).fetchall()
-    return prompts
+    try:
+        db = get_db()
+        prompts = db.execute(
+                            "SELECT\
+                            p.id,\
+                            p.prompt,\
+                            u.username,\
+                            s.id AS statut_id,\
+                            s.statut AS statut\
+                            FROM prompts p\
+                            JOIN users u ON p.user_id = u.id\
+                            JOIN statuts s ON p.statut_id = s.id\
+                            WHERE p.statut_id = %s;", (status_id,)
+        ).fetchall()
+        return jsonify(prompts), 200
+    except:
+        abort(404, message='Statut does not exist')
 
 # Endpoint pour afficher les prompts par utilisateur
 @bp.route('/user/<int:user_id>')
-@bp.response(200, PromptSchema(many=True))
 @jwt_required()
 def get_prompts_by_user(user_id):
-    db = get_db()
-    prompts = db.execute(
-        "SELECT p.id, p.prompt, s.statut, u.username "
-        "FROM prompts p "
-        "JOIN statuts s ON p.statut_id = s.id "
-        "JOIN users u ON p.user_id = u.id "
-        "WHERE p.user_id = %s;", (user_id,)
-    ).fetchall()
-    return prompts
+        db = get_db()
+        try:
+            prompts = db.execute("SELECT\
+                                p.id,\
+                                p.prompt,\
+                                u.username,\
+                                s.id AS statut_id,\
+                                s.statut AS statut\
+                                FROM prompts p\
+                                JOIN users u ON p.user_id = u.id\
+                                JOIN statuts s ON p.statut_id = s.id\
+                                WHERE p.user_id = %s;", (user_id,)
+            ).fetchall()
+        except:
+            abort(500, message='Try later...')
+        else:
+            print(prompts)
+            if prompts:
+                print('here')
+                return jsonify(prompts), 200
+            else:
+                print('there')
+                abort(404, message='User does not exist')
+
+
+@bp.route('/prompt/add', methods=['POST'])
+@bp.arguments(PromptSchema, location='json', description='Add prompt.', as_kwargs=True)
+@jwt_required()
+def add_prompt(**kwargs):
+    try:
+        db = get_db()
+        prompt = kwargs.get('prompt')
+        statut_id = kwargs.get('statut_id', 1)
+        user_id = int(get_jwt()['sub'])
+        prompt = db.execute(
+            "select create_and_get_prompt(%s, %s, %s);",
+            (prompt, user_id, statut_id)
+        )
+        print(prompt)
+    except:
+        abort(500, message='Try later...')
+    return jsonify({'message': 'Prompt added successfully'}), 201
+
+@bp.route('/')
+def get_prompts():
+    try:
+        db = get_db()
+        prompts = db.execute("SELECT\
+                            p.id,\
+                            p.prompt,\
+                            u.username,\
+                            s.id AS statut_id,\
+                            s.statut AS statut\
+                            FROM prompts p\
+                            JOIN users u ON p.user_id = u.id\
+                            JOIN statuts s ON p.statut_id = s.id;").fetchall()
+        return jsonify(prompts), 200
+    except:
+        abort(500, message='Try later...')

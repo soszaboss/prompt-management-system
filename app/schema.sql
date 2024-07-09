@@ -24,11 +24,11 @@ CREATE TABLE statuts (
 );
 
 INSERT INTO statuts (statut, description) VALUES
-    ('En attente', $$'Lors de l\'ajout d\'un Prompt par un utilisateur.'$$),
+    ('En attente', $$'Lors de l'ajout d'un Prompt par un utilisateur.'$$),
     ('Activer', $$'Après validation par un administrateur ou par vote.'$$),
     ('À revoir', $$'Si l\'administrateur demande une modification.'$$),
-    ('Rappel', $$'Si aucune action n\'est prise par l\'administrateur dans les deux jours suivant l\'ajout ou une demande de suppression/modification.'$$),
-    ('À supprimer', $$'Lorsque l\'utilisateur demande la suppression de son propre Prompt.'$$);
+    ('Rappel', $$'Si aucune action n'est prise par l'administrateur dans les deux jours suivant l'ajout ou une demande de suppression/modification.'$$),
+    ('À supprimer', $$'Lorsque l'utilisateur demande la suppression de son propre Prompt.'$$);
 
 -- Create users table
 CREATE TABLE users (
@@ -176,25 +176,37 @@ END;
 $$;
 
 -- Fonction pour la gestion des prompts
-CREATE OR REPLACE FUNCTION create_and_get_prompt(prompt_text TEXT, prompt_user INT, prompt_statut_id INT DEFAULT 1)
-RETURNS TABLE (
-    prompt_id INT,
+CREATE TYPE prompt_type AS (
+    id INT,
     prompt TEXT,
-    users_id INT,
-    statuts_id INT,
-    created_at TIMESTAMPTZ,
-    updated_at TIMESTAMPTZ
+    user_id INT,
+    statut_id INT,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+
+CREATE OR REPLACE FUNCTION create_and_get_prompt(
+    prompt_text TEXT,
+    prompt_user INT,
+    prompt_statut_id INT DEFAULT 1
 )
+RETURNS prompt_type
 LANGUAGE plpgsql
 AS $$
+DECLARE
+    prompt_row prompt_type;
 BEGIN
     -- Insérer le nouveau prompt
     INSERT INTO prompts (prompt, user_id, statut_id)
     VALUES (prompt_text, prompt_user, prompt_statut_id)
     RETURNING id, prompt, user_id, statut_id, created_at, updated_at
-    INTO prompt_id, prompt, users_id, statuts_id, created_at, updated_at;
+    INTO prompt_row;
+    
+    -- Retourner la ligne insérée
+    RETURN prompt_row;
 END;
 $$;
+
 
 CREATE OR REPLACE FUNCTION is_prompt_owned_by_user(prompt_id INT, user_id INT)
 RETURNS BOOLEAN
@@ -229,8 +241,8 @@ BEGIN
             p.prompt,
             u.username,
             u.email,
-            s.id AS status_id,
-            s.description AS status_description
+            s.id AS statuts,
+            s.description AS statuts_description
         FROM prompts p
         JOIN users u ON p.user_id = u.id
         JOIN statuts s ON p.statut_id = s.id

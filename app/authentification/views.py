@@ -50,7 +50,6 @@ def login(**kwargs):
         password = kwargs.get("password")
         db = get_db()
         user = db.execute("select *from users where email = %s;", (email,)).fetchone()
-        print(user)
         if user is None:
             abort(404, message='User does not exist.')
         else:

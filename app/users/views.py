@@ -3,7 +3,7 @@ from flask import jsonify
 from flask_smorest import abort
 from app.messages import Message
 from app.db import get_db
-from app.authentification.schema import UserSchema
+from app.authentification.schemas import UserSchema
 from flask.views import MethodView
 from app.users.schema import UserCrendentialsSchema
 from flask_jwt_extended import jwt_required

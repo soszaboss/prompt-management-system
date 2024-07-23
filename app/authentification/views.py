@@ -3,7 +3,7 @@ from flask import jsonify, request
 from flask_smorest import abort
 from app.messages import Message
 from app.db import get_db, validate_password
-from .schema import UserSchema, LoginShema
+from .schemas import UserSchema, LoginShema
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_jwt_extended import create_access_token, create_refresh_token, decode_token
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
@@ -32,7 +32,7 @@ def register(**kwargs):
             else:
                 if validate_password(password=password):
                     hashed_password = generate_password_hash(password=password)
-                    user = db.execute("select create_get_user(%s, %s, %s, %s);", (username, email, hashed_password, 2)).fetchone()['create_get_user']
+                    user = db.execute("select create_get_user(%s, %s, %s);", (username, email, hashed_password, )).fetchone()['create_get_user']
                     user_id = int(user[0])
                     domain = request.url_root
                     print(f'this is the domain: {domain}')

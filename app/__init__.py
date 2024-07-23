@@ -32,6 +32,12 @@ def create_app():
     from app.prompts import bp as prompts
     api.register_blueprint(prompts)
 
+    from app.notes import bp as notes
+    api.register_blueprint(notes)
+
+    from app.votes import bp as votes
+    api.register_blueprint(votes)
+
     # jwt error handlers
     @jwt.expired_token_loader
     def expired_token_callback(jwt_header, jwt_data):

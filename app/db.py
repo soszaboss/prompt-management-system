@@ -3,10 +3,10 @@ import dotenv
 from getpass import getpass
 import psycopg
 from psycopg.rows import dict_row
+from psycopg.rows import DictRow
 from werkzeug.security import generate_password_hash
 import click
 from flask import current_app, g
-from .send_email import send_activation_email
 
 
 dotenv.load_dotenv()
@@ -136,8 +136,8 @@ def create_admin_user():
 
     db = get_db()
     hashed_password = generate_password_hash(password)
-    user = db.execute("insert into users(username, email, password, role) values(%s, %s, %s, %s);", (username, email, hashed_password, 1))
-    print(f'User {username} account created successfully. Please check your email {email} to activate your account or it will be automatically deleted in 24 hours.')
+    user = db.execute("insert into users(username, email, password, role_id, is_activated) values(%s, %s, %s, %s, %s);", (username, email, hashed_password, 1, 't'))
+    print(f'User {username} account created successfully.')
 
 
        

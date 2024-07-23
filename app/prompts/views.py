@@ -2,7 +2,7 @@ from app.prompts import bp
 from flask import jsonify
 from flask_smorest import abort
 from app.db import get_db
-from app.prompts.schema import PromptSchema
+from app.prompts.schemas import PromptSchema
 from flask.views import MethodView
 from flask_jwt_extended import jwt_required, get_jwt
 from app.decorators import user_allowed
@@ -51,6 +51,7 @@ class Prompt(MethodView):
         try:
             prompt = kwargs.get('prompt')
             statut_id = kwargs.get('statut_id', None)
+            prix = kwargs.get('prix', None)
             db = get_db()
             if prompt and statut_id:
                 db.execute(
@@ -128,10 +129,11 @@ def add_prompt(**kwargs):
         db = get_db()
         prompt = kwargs.get('prompt')
         statut_id = kwargs.get('statut_id', 1)
+        prix = kwargs.get('prix', 1000)
         user_id = int(get_jwt()['sub'])
         prompt = db.execute(
-            "select create_and_get_prompt(%s, %s, %s);",
-            (prompt, user_id, statut_id)
+            "select create_and_get_prompt(%s, %s, %s, %s);",
+            (prompt, user_id, prix, statut_id)
         )
         print(prompt)
     except:
@@ -154,3 +156,12 @@ def get_prompts():
         return jsonify(prompts), 200
     except:
         abort(500, message='Try later...')
+
+# Route pour gérer les statuts des prompts
+@bp.route('/manage_status', methods=['POST'])
+@jwt_required()
+@user_allowed('admin')
+def manage_status():
+    db = get_db()
+    db.execute("SELECT manage_prompt_status();")
+    return jsonify({'message': 'Prompt statuses managed successfully'}), 200

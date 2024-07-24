@@ -1,5 +1,3 @@
-Sure, here's a README for your project:
-
 ---
 
 # Flask React REST API Application

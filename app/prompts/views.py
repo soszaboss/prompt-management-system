@@ -19,8 +19,11 @@ class Prompt(MethodView):
             p.id,\
             p.prompt,\
             u.username,\
+            p.prix,\
             s.id AS statut_id,\
-            s.statut AS statut\
+            s.statut AS statut,\
+            p.created_at,\
+            p.updated_at\
             FROM prompts p\
             JOIN users u ON p.user_id = u.id\
             JOIN statuts s ON p.statut_id = s.id\
@@ -49,22 +52,18 @@ class Prompt(MethodView):
     @user_allowed('admin')
     def put(self, id, **kwargs):
         try:
+            db = get_db()
             prompt = kwargs.get('prompt')
             statut_id = kwargs.get('statut_id', None)
             prix = kwargs.get('prix', None)
-            db = get_db()
-            if prompt and statut_id:
-                db.execute(
-                            "UPDATE prompts SET prompt = %s, statut_id = %s, updated_at = NOW() WHERE id = %s;",
-                            (prompt, statut_id, id)
-                        )
-            elif prompt and statut_id is None:
-                db.execute(
-                            "UPDATE prompts SET prompt = %s, updated_at = NOW() WHERE id = %s;",
-                            (prompt, id)
-                        )
-            else:
+            prompt_query = db.execute("select *from prompts where id = %s;", (id,)).fetchone()
+            if prompt_query is None:
                 abort(400, message='Prompt does not exist.')
+            else:
+                new_prompt = prompt if prompt is not None else prompt_query['prompt']
+                new_statut_id = statut_id if statut_id is not None else prompt_query['statut_id']
+                new_prix = prix if prix is not None else prompt_query['prix']
+                db.execute("UPDATE prompts SET prompt = %s, statut_id = %s, prix = %s WHERE id = %s;", (new_prompt, new_statut_id, new_prix, id))
         except:
             abort(500, message='Try later...')
         else:
@@ -82,7 +81,9 @@ def get_prompts_by_status(status_id):
                             p.prompt,\
                             u.username,\
                             s.id AS statut_id,\
-                            s.statut AS statut\
+                            s.statut AS statut,\
+                            p.created_at,\
+                            p.updated_at\
                             FROM prompts p\
                             JOIN users u ON p.user_id = u.id\
                             JOIN statuts s ON p.statut_id = s.id\
@@ -103,7 +104,9 @@ def get_prompts_by_user(user_id):
                                 p.prompt,\
                                 u.username,\
                                 s.id AS statut_id,\
-                                s.statut AS statut\
+                                s.statut AS statut,\
+                                p.created_at,\
+                                p.updated_at\
                                 FROM prompts p\
                                 JOIN users u ON p.user_id = u.id\
                                 JOIN statuts s ON p.statut_id = s.id\
@@ -127,10 +130,12 @@ def get_prompts_by_user(user_id):
 def add_prompt(**kwargs):
     try:
         db = get_db()
-        prompt = kwargs.get('prompt')
+        prompt = kwargs.get('prompt', None)
         statut_id = kwargs.get('statut_id', 1)
         prix = kwargs.get('prix', 1000)
         user_id = int(get_jwt()['sub'])
+        if prompt is None:
+            abort(400, message='Prompt field cannot be empty.')
         prompt = db.execute(
             "select create_and_get_prompt(%s, %s, %s, %s);",
             (prompt, user_id, prix, statut_id)
@@ -149,7 +154,9 @@ def get_prompts():
                             p.prompt,\
                             u.username,\
                             s.id AS statut_id,\
-                            s.statut AS statut\
+                            s.statut AS statut,\
+                            p.created_at,\
+                            p.updated_at\
                             FROM prompts p\
                             JOIN users u ON p.user_id = u.id\
                             JOIN statuts s ON p.statut_id = s.id;").fetchall()
@@ -158,7 +165,7 @@ def get_prompts():
         abort(500, message='Try later...')
 
 # Route pour gérer les statuts des prompts
-@bp.route('/manage_status', methods=['POST'])
+@bp.route('/manage_status', methods=['GET'])
 @jwt_required()
 @user_allowed('admin')
 def manage_status():

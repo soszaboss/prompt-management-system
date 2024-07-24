@@ -6,7 +6,7 @@ This is a REST API application built with Flask. The project includes user manag
 
 ## Features
 
-- User Authentication and Authorization
+- User Authentication, Activation and Authorization
 - Prompt Management
 - Group Management
 - Vote and Note System

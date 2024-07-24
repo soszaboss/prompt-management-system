@@ -67,7 +67,7 @@ CREATE TABLE notes (
     id SERIAL PRIMARY KEY,
     prompt_id INT NOT NULL,
     user_id INT NOT NULL,
-    note INT NOT NULL CHECK (note BETWEEN -10 AND 10),
+    note NUMERIC NOT NULL CHECK (note BETWEEN -10 AND 10),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     CONSTRAINT fk_prompt FOREIGN KEY(prompt_id) REFERENCES prompts(id),
@@ -350,6 +350,31 @@ BEGIN
     END IF;
     
     RETURN points;
+END;
+$$;
+
+-- Calcul la note d'un membre du même groupe
+CREATE OR REPLACE FUNCTION calculate_note(
+    user_id INT,
+    prompt_id INT,
+    note NUMERIC
+)
+RETURNS NUMERIC
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    note_result NUMERIC;
+    same_group BOOLEAN;
+BEGIN
+    same_group := is_user_same_groupe(user_id, (SELECT p.user_id FROM prompts p WHERE p.id = prompt_id));
+
+    IF same_group THEN
+        note_result := 0.6 * note;
+    ELSE
+        note_result := 0.4 * note;
+    END IF;
+
+    RETURN note_result;
 END;
 $$;
 

@@ -6,13 +6,13 @@ from app.db import get_db
 from app.groupes.schemas import GroupeSchema
 from flask.views import MethodView
 from flask_jwt_extended import jwt_required, get_jwt
-from app.decorators import user_allowed
+from app.decorators import user_allowed, users_allowed
 
 @bp.route('/groupe/<int:id>')
 class Groupe(MethodView):
     @bp.response(status_code=204, schema=Message, description='Message shows groupe is deleted successfully.')
     @jwt_required()
-    @user_allowed('admin')
+    @users_allowed(['admin', 'user'])
     def delete(self, id):
         db = get_db()
         groupe = db.execute("SELECT * FROM groupes WHERE id = %s;", (id,)).fetchone()
@@ -52,7 +52,7 @@ class Groupe(MethodView):
 
     @bp.response(status_code=200, schema=GroupeSchema, description='Message shows groupe details.')
     @jwt_required()
-    @user_allowed('admin')
+    @user_allowed(['admin', 'user'])
     def get(self, id):
         db = get_db()
         groupe = db.execute("SELECT g.id, g.name, g.description, u.username as created_by, g.created_at, g.updated_at\
@@ -66,7 +66,7 @@ class Groupe(MethodView):
 @bp.route('/', methods=['GET'])
 @bp.response(200, GroupeSchema(many=True))
 @jwt_required()
-@user_allowed('admin')
+@user_allowed(['admin', 'user'])
 def get_groupes():
     db = get_db()
     groupes = db.execute("SELECT g.id, g.name, g.description, u.username as created_by, g.created_at, g.updated_at\

@@ -44,7 +44,7 @@ class NoteView(MethodView):
         except:
             abort(500, message='Try later...')
 
-    @bp.arguments(NoteSchema, location='json', description='Update note.', as_kwargs=True)
+    """@bp.arguments(NoteSchema, location='json', description='Update note.', as_kwargs=True)
     @jwt_required()
     @user_allowed('admin')
     def put(self, id, **kwargs):
@@ -68,28 +68,36 @@ class NoteView(MethodView):
             abort(500, message='Try later...')
         else:
             return jsonify({'message': 'Note updated successfully'}), 200
-
+"""
 @bp.route('/note/add', methods=['POST'])
 @bp.arguments(NoteSchema, location='json', description='Add note.', as_kwargs=True)
 @jwt_required()
+
 def add_note(**kwargs):
-    try:
-        db = get_db()
-        note = kwargs.get('note', None)
-        if note is not None and -10 <= note <= 10:
-            prompt_id = kwargs.get('prompt_id')
-            user_id = int(get_jwt()['sub'])
+    db = get_db()
+    note = kwargs.get('note', None)
+    if note is not None and -10 <= note <= 10:
+        prompt_id = kwargs.get('prompt_id')
+        user_id = int(get_jwt()['sub'])
+        note = db.execute("select calculate_note(%s, %s, %s);", (user_id, prompt_id, note)).fetchone()['calculate_note']
+        already_noted = db.execute("select id from notes where prompt_id = %s and user_id = %s;", (prompt_id, user_id))
+        if already_noted.fetchone() is not None:
+            abort(400, message='You have already noted for this prompt.')
+        try:
+            print(f'note: {round(float(note), 2)}, prompt_id: {prompt_id}, user_id: {user_id}')
             db.execute(
                 "INSERT INTO notes (note, prompt_id, user_id) VALUES (%s, %s, %s);",
-                (note, prompt_id, user_id)
+                (round(float(note), 2), prompt_id, user_id)
             )
+        except Exception as e:
+            print(e)
+            # abort(500, message='Try later...')
         else:
-            abort(400, message='Note must be between -10 and 10.')
-    except:
-        abort(500, message='Try later...')
-    return jsonify({'message': 'Note added successfully'}), 201
+            return jsonify({'message': 'Note added successfully'}), 201
+    else:
+        abort(400, message='Note must be between -10 and 10.')
 
-@bp.route('/notes')
+@bp.route('/')
 @jwt_required()
 def get_notes():
     try:

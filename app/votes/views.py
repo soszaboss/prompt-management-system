@@ -5,13 +5,14 @@ from app.db import get_db
 from app.votes.schemas import VoteSchema
 from flask.views import MethodView
 from flask_jwt_extended import jwt_required, get_jwt
-from app.decorators import user_allowed
+from app.decorators import user_allowed, users_allowed
 
 # Endpoint pour gérer les votes
 @bp.route('/vote/<int:id>')
 class VoteView(MethodView):
     @bp.response(200, description='Get vote by id.')
     @jwt_required()
+    @user_allowed(['admin', 'user'])
     def get(self, id):
         db = get_db()
         vote = db.execute(
@@ -73,6 +74,7 @@ def add_vote(**kwargs):
 
 @bp.route('/')
 @jwt_required()
+@user_allowed(['admin', 'user'])
 def get_votes():
     try:
         db = get_db()

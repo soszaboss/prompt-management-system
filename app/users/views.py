@@ -6,15 +6,18 @@ from app.db import get_db
 from app.authentification.schemas import UserSchema
 from flask.views import MethodView
 from app.users.schema import UserCrendentialsSchema
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt
 from app.decorators import user_allowed
 # End point to update and delete an user
 @bp.route('/user/<int:id>')
 class User(MethodView):
     @bp.response(status_code=204, schema=Message, description='Message shows user is deleted successfuly.')
     @jwt_required()
-    @user_allowed('admin')
+    @user_allowed('user')
     def delete(self, id):
+        user_id = int(get_jwt()['sub'])
+        if not user_id == id:
+            abort(403, message='You can only delete an account of yourself if it is yours.')
         db = get_db()
         user = db.execute("SELECT * FROM users WHERE id = %s;", (id,)).fetchone()
         if user is None:
@@ -26,36 +29,29 @@ class User(MethodView):
     @bp.arguments(UserCrendentialsSchema, location='json', description='Update user.', as_kwargs=True)
     @bp.response(status_code=200, schema=Message, description='Sending update')
     @jwt_required()
-    @user_allowed('admin')
+    @user_allowed('user')
     def put(self, id, **kwargs):
-        try:
-            username = kwargs.get("username")
-        except ValueError:
-            username = None
-        try:
-            email = kwargs.get("email")
-        except ValueError:
-            email = None
+        user_id = int(get_jwt()['sub'])
+        if not user_id == id:
+            abort(403, message='You can only update an account of yourself if it is yours.')
+       
+        username = kwargs.get("username")
+        email = kwargs.get("email")
+
         db = get_db()
-        if email and username:
-            if db.execute("SELECT * FROM users WHERE email = %s;", (email,)).fetchone():
-                abort(409, message='Email already used.')
-            elif db.execute("SELECT * FROM users WHERE username = %s;", (username,)).fetchone():
-                abort(409, message='Username already used.')
-            else:
-                # Update user logic here
-                db.execute("UPDATE users SET username=%s, email=%s WHERE id=%s;", (username, email, id,))
-                return jsonify(message='User updated successfully'), 200
-        elif email and username is None:
-            # Create account logic here (email-only registration)
-            db.execute("UPDATE users SET email=%s WHERE id=%s;", (email, id,))
-            return jsonify(message='Account updated successfuly.'), 200
-        elif email is None and username:
-            # Create account logic here (username-only registration)
-            db.execute("UPDATE users SET username=%s WHERE id=%s;", (username, id,))
-            return jsonify(message='Account updated successfuly.'), 200
+        user = db.execute("selct *from users where id = %s;", (id,)).fetchone()
+        if user is not None:
+            new_username = username if username is not None else user['username']
+            new_email = email if email is not None else user['email']
+
+            #check if email or username does not exist
+            if db.execute("select *from users where (email = %s or username = %s) and id != %s;", (new_email, new_username, id,)).fetchone() is not None:
+                abort(409, message='Email or username already used. Please choose another one.')
+            db.execute("UPDATE users SET username=%s, email=%s WHERE id=%s;", (username, email, id,))
+            return jsonify(message='User updated successfully'), 200
+        
         else:
-            abort(400, message='Empty fields.')
+            abort(400, message='User does not exist. Please enter valid user.')
     
     @bp.response(status_code=200, schema=UserSchema, description='Message shows user details.')
     @jwt_required()

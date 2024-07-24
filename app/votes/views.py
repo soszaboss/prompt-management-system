@@ -17,7 +17,6 @@ class VoteView(MethodView):
         vote = db.execute(
             "SELECT\
             v.id,\
-            v.vote,\
             u.username,\
             p.id AS prompt_id,\
             p.prompt\
@@ -44,56 +43,41 @@ class VoteView(MethodView):
         except:
             abort(500, message='Try later...')
 
-    @bp.arguments(VoteSchema, location='json', description='Update vote.', as_kwargs=True)
-    @jwt_required()
-    @user_allowed('admin')
-    def put(self, id, **kwargs):
-        try:
-            vote = kwargs.get('vote')
-            prompt_id = kwargs.get('prompt_id', None)
-            db = get_db()
-            if vote and prompt_id:
-                db.execute(
-                            "UPDATE votes SET vote = %s, prompt_id = %s, updated_at = NOW() WHERE id = %s;",
-                            (vote, prompt_id, id)
-                        )
-            elif vote and prompt_id is None:
-                db.execute(
-                            "UPDATE votes SET vote = %s, updated_at = NOW() WHERE id = %s;",
-                            (vote, id)
-                        )
-            else:
-                abort(400, message='Vote does not exist.')
-        except:
-            abort(500, message='Try later...')
-        else:
-            return jsonify({'message': 'Vote updated successfully'}), 200
 
-@bp.route('/vote/add', methods=['POST'])
+@bp.route('/add/vote', methods=['POST'])
 @bp.arguments(VoteSchema, location='json', description='Add vote.', as_kwargs=True)
 @jwt_required()
 def add_vote(**kwargs):
+    db = get_db()
+    prompt_id = kwargs.get('prompt_id')
+    user_id = int(get_jwt()['sub'])
+    prompt = db.execute("SELECT * FROM prompts WHERE id = %s;", (prompt_id,)).fetchone()
+    if prompt is None:
+        abort(404, message='Prompt does not exist')
+    vote = db.execute("select id from votes where prompt_id = %s and user_id = %s;", (prompt_id, user_id))
+    if vote.fetchone() is not None:
+        abort(400, message='You have already voted for this prompt.')
     try:
-        db = get_db()
-        vote = kwargs.get('vote')
-        prompt_id = kwargs.get('prompt_id')
-        user_id = int(get_jwt()['sub'])
+        print('point')
+        points = db.execute("SELECT calculate_vote_points(%s, %s);", (user_id, prompt_id)).fetchone()['calculate_vote_points']
+        print(f'points: {points}')
         db.execute(
-            "INSERT INTO votes (vote, prompt_id, user_id) VALUES (%s, %s, %s);",
-            (vote, prompt_id, user_id)
+            "INSERT INTO votes (prompt_id, user_id, points) VALUES (%s, %s, %s);",
+            (prompt_id, user_id, int(points))
         )
+        db.execute('select check_prompt_activation(%s);', (prompt_id,))
     except:
         abort(500, message='Try later...')
-    return jsonify({'message': 'Vote added successfully'}), 201
+    else:
+        return jsonify({'message': 'Vote added successfully'}), 201
 
-@bp.route('/votes')
+@bp.route('/')
 @jwt_required()
 def get_votes():
     try:
         db = get_db()
         votes = db.execute("SELECT\
                             v.id,\
-                            v.vote,\
                             u.username,\
                             p.id AS prompt_id,\
                             p.prompt\
@@ -105,7 +89,7 @@ def get_votes():
         abort(500, message='Try later...')
 
 
-@bp.route('/prompt/<int:prompt_id>/vote', methods=['POST'])
+"""@bp.route('/prompt/<int:prompt_id>/vote', methods=['POST'])
 @jwt_required()
 def vote_for_prompt(prompt_id):
     db = get_db()
@@ -122,4 +106,4 @@ def vote_for_prompt(prompt_id):
     # Check for prompt activation
     db.execute("SELECT check_prompt_activation(%s);", (prompt_id,))
 
-    return jsonify({'message': 'Vote added successfully'}), 201
+    return jsonify({'message': 'Vote added successfully'}), 201 """

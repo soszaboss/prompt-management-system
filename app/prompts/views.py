@@ -172,3 +172,36 @@ def manage_status():
     db = get_db()
     db.execute("SELECT manage_prompt_status();")
     return jsonify({'message': 'Prompt statuses managed successfully'}), 200
+
+@bp.route('/prompt/<int:prompt_id>/update-status/<int:status_id>', methods=['PUT'])
+@jwt_required()
+@user_allowed('admin')
+def update_status(prompt_id, status_id):
+    db = get_db()
+    list_status_ids = [1, 2, 3, 4, 5]
+    if status_id not in list_status_ids:
+        abort(400, message='Status does not exist')
+    if db.execute("select id from prompts where id = %s", (prompt_id,)).fetchone() is None:
+        abort(400, message="Prompt does not exist.")
+    try:
+        db.execute("select update_prompt_status(%s, %s);", (prompt_id, status_id))
+    except:
+        abort(500, message="Try later...")
+    else:
+        return jsonify({'message': 'Prompt status updated successfully'}), 200
+
+@bp.route('/prompt/<int:prompt_id>/update-price/<int:prompt_price>', methods=['PUT'])
+# @jwt_required()
+# @user_allowed('admin')
+def update_status(prompt_id, prompt_price):
+    db = get_db()
+    if db.execute("select id from prompts where id = %s", (prompt_id,)).fetchone() is None:
+        abort(400, message="Prompt does not exist.")
+    if type(prompt_price) is not int:
+        abort(400, message="prompt_price has to be an integer.")
+    try:
+        db.execute("select update_prompt_prix(%s, %s);", (prompt_id, prompt_price))
+    except:
+        abort(500, message="Try later...")
+    else:
+        return jsonify({'message': 'Prompt price updated successfully'}), 200

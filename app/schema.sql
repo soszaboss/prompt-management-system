@@ -24,11 +24,11 @@ CREATE TABLE statuts (
 );
 
 INSERT INTO statuts (statut, description) VALUES
-    ('En attente', $$'Lors de l\'ajout d\'un Prompt par un utilisateur.'$$),
+    ('En attente', $$'Lors de l'ajout d'un Prompt par un utilisateur.'$$),
     ('Activer', $$'Après validation par un administrateur ou par vote.'$$),
-    ('À revoir', $$'Si l\'administrateur demande une modification.'$$),
-    ('Rappel', $$'Si aucune action n\'est prise par l\'administrateur dans les deux jours suivant l\'ajout ou une demande de suppression/modification.'$$),
-    ('À supprimer', $$'Lorsque l\'utilisateur demande la suppression de son propre Prompt.'$$);
+    ('À revoir', $$'Si l'administrateur demande une modification.'$$),
+    ('Rappel', $$'Si aucune action n'est prise par l'administrateur dans les deux jours suivant l'ajout ou une demande de suppression/modification.'$$),
+    ('À supprimer', $$'Lorsque l'utilisateur demande la suppression de son propre Prompt.'$$);
 
 -- Create users table
 CREATE TABLE users (
@@ -102,7 +102,6 @@ CREATE TABLE votes (
     id SERIAL PRIMARY KEY,
     prompt_id INT REFERENCES prompts(id),
     user_id INT REFERENCES users(id),
-    groupe_id INT REFERENCES groupes(id),
     points INT CHECK (points IN (1, 2)),
     date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -342,7 +341,7 @@ DECLARE
     points INT;
     same_group BOOLEAN;
 BEGIN
-    same_group := is_user_same_groupe(user_id, (SELECT user_id FROM prompts WHERE id = prompt_id));
+    same_group := is_user_same_groupe(user_id, (SELECT p.user_id FROM prompts p WHERE p.id = prompt_id));
     
     IF same_group THEN
         points := 2;

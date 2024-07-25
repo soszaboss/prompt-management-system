@@ -26,7 +26,7 @@ This is a REST API application built with Flask. The project includes user manag
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/yourproject.git
+git clone https://github.com/soszaboss/prompt-management-system.git
 cd yourproject
 ```
 ### 2. Run the application
@@ -79,7 +79,6 @@ The application will be accessible at `http://127.0.0.1:5000/`.
 ## Project Structure
 
 - `app/` - Contains the Flask application and modules
-- `migrations/` - Database migrations
 - `tests/` - Unit tests
 - `config.py` - Configuration file
 - `schema.sql` - SQL script for database schema

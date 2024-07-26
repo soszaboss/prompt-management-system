@@ -2,11 +2,14 @@ from .config import Config
 from .extensions import api, jwt, mail
 from .db import get_db
 from flask import Flask, jsonify
-from flask_mail import Message
-def create_app():
+
+
+def create_app(test_config=None):
 
     app = Flask(__name__)
     app.config.from_object(Config)
+    if test_config is not None:
+        app.config.update(test_config)
 
     api.init_app(app)
     jwt.init_app(app)

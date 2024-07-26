@@ -3,7 +3,6 @@ import dotenv
 from getpass import getpass
 import psycopg
 from psycopg.rows import dict_row
-from psycopg.rows import DictRow
 from werkzeug.security import generate_password_hash
 import click
 from flask import current_app, g
@@ -26,9 +25,9 @@ def get_db():
 
 def close_db(e=None):
     db = g.pop('db', None)
-
     if db is not None:
         db.close()
+
 
 def init_db():
 
@@ -113,7 +112,7 @@ def user_input(field: str, password: bool = False) -> str:
                     else:
                         print('Invalid email format. Please try again.')
 
-@click.command('create-admin')
+@click.command('createsuperuser')
 def create_admin_user():
     username = user_input('username')
     email = user_input('email')

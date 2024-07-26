@@ -3,7 +3,7 @@ BEGIN;
 -- Drop existing tables and functions
 DROP TABLE IF EXISTS roles, users, tokens_block_list, statuts, prompts, notes, votes, groupes, groupes_users CASCADE;
 DROP FUNCTION IF EXISTS is_user_same_groupe, create_get_user, get_user_by_id, get_jti_or_none, trigger_set_timestamp, create_and_get_prompt, is_prompt_owned_by_user, get_prompts_by_status, update_prompt_status, update_prompt_prix, manage_prompt_status, calculate_vote_points, vote_for_prompt_activation, get_users_by_group, delete_user_and_dependencies, get_row_by_id, recalculate_prompt_price, check_prompt_activation;
-DROP TYPE prompt_type;
+DROP TYPE IF EXISTS prompt_type;
 -- Create roles table
 CREATE TABLE roles (
     id SERIAL PRIMARY KEY,

@@ -10,9 +10,9 @@ from app.decorators import user_allowed, users_allowed
 
 @bp.route('/groupe/<int:id>')
 class Groupe(MethodView):
-    @bp.response(status_code=204, schema=Message, description='Message shows groupe is deleted successfully.')
+    @bp.response(status_code=204, description='Message shows groupe is deleted successfully.')
     @jwt_required()
-    @users_allowed(['admin', 'user'])
+    @user_allowed('admin')
     def delete(self, id):
         db = get_db()
         groupe = db.execute("SELECT * FROM groupes WHERE id = %s;", (id,)).fetchone()
@@ -20,7 +20,7 @@ class Groupe(MethodView):
             abort(404, message='Groupe does not exist')
         else:
             db.execute("DELETE FROM groupes WHERE id=%s", (id,))
-            return jsonify(message='Groupe deleted successfully'), 204
+            return '', 204
 
     @bp.arguments(GroupeSchema, location='json', description='Update groupe.', as_kwargs=True)
     @bp.response(status_code=200, schema=Message, description='Sending update')
@@ -48,11 +48,11 @@ class Groupe(MethodView):
         # Mettre à jour le groupe dans la base de données
         db.execute("UPDATE groupes SET name=%s, description=%s WHERE id=%s;", (new_name, new_description, id))
         
-        return jsonify(message='Groupe updated successfully'), 200
+        return '', 200
 
     @bp.response(status_code=200, schema=GroupeSchema, description='Message shows groupe details.')
     @jwt_required()
-    @user_allowed(['admin', 'user'])
+    @user_allowed('admin')
     def get(self, id):
         db = get_db()
         groupe = db.execute("SELECT g.id, g.name, g.description, u.username as created_by, g.created_at, g.updated_at\
@@ -66,7 +66,7 @@ class Groupe(MethodView):
 @bp.route('/', methods=['GET'])
 @bp.response(200, GroupeSchema(many=True))
 @jwt_required()
-@user_allowed(['admin', 'user'])
+@user_allowed('admin')
 def get_groupes():
     db = get_db()
     groupes = db.execute("SELECT g.id, g.name, g.description, u.username as created_by, g.created_at, g.updated_at\

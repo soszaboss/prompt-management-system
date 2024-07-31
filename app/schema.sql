@@ -13,7 +13,7 @@ CREATE TABLE roles (
 
 INSERT INTO roles (role, description) VALUES 
     ('admin', $$'Peut créer des utilisateurs individuels ou des groupes d'utilisateurs, valide, demande la modification, ou supprime des Prompts, peut voir tous les Prompts mais ne peut pas voter ni noter.'$$),
-    ('user', $$'Proposent des Prompts à vendre, peuvent voter pour l\'activation des Prompts en attente de validation, peuvent noter les Prompts activés, mais ne peuvent ni voter ni noter leurs propres Prompts, les membres d\'un même groupe ont un impact plus fort sur la note et les votes.'$$),
+    ('user', $$'Proposent des Prompts à vendre, peuvent voter pour l'activation des Prompts en attente de validation, peuvent noter les Prompts activés, mais ne peuvent ni voter ni noter leurs propres Prompts, les membres d'un même groupe ont un impact plus fort sur la note et les votes.'$$),
     ('guest', $$'Peut consulter un Prompt, Peut rechercher un prompt par son contenu ou par mot clefs, Peut Acheter un Prompt.'$$);
 
 -- Create statuts table
@@ -40,7 +40,7 @@ CREATE TABLE users (
     role_id INT NOT NULL DEFAULT 3,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT fk_roles_users FOREIGN KEY (role_id) REFERENCES roles(id)
+    CONSTRAINT fk_roles_users FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE TABLE tokens_block_list(
@@ -58,8 +58,8 @@ CREATE TABLE prompts (
     prix INT DEFAULT 1000,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
-    CONSTRAINT fk_user FOREIGN KEY(user_id) REFERENCES users(id),
-    CONSTRAINT fk_statut FOREIGN KEY(statut_id) REFERENCES statuts(id)
+    CONSTRAINT fk_user FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_statut FOREIGN KEY(statut_id) REFERENCES statuts(id) ON UPDATE CASCADE
 );
 
 -- Create notes table
@@ -70,8 +70,8 @@ CREATE TABLE notes (
     note NUMERIC NOT NULL CHECK (note BETWEEN -10 AND 10),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
-    CONSTRAINT fk_prompt FOREIGN KEY(prompt_id) REFERENCES prompts(id),
-    CONSTRAINT fk_user FOREIGN KEY(user_id) REFERENCES users(id)
+    CONSTRAINT fk_prompt FOREIGN KEY(prompt_id) REFERENCES prompts(id) ON UPDATE CASCADE,
+    CONSTRAINT fk_user FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- Create groupes table
@@ -82,7 +82,7 @@ CREATE TABLE groupes(
     created_by INT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT fk_users_groupes FOREIGN KEY(created_by) REFERENCES users(id)
+    CONSTRAINT fk_users_groupes FOREIGN KEY(created_by) REFERENCES users(id) ON UPDATE CASCADE
 );
 
 -- Create groupes_users table
@@ -92,16 +92,16 @@ CREATE TABLE groupes_users(
     groupe_id INT NOT NULL,
     added_by INT NOT NULL,
     added_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT fk_users_groupes_users FOREIGN KEY(user_id) REFERENCES users(id),
-    CONSTRAINT fk_added_by_groupes_users FOREIGN KEY(added_by) REFERENCES users(id),
-    CONSTRAINT fk_groupes_groupes_users FOREIGN KEY(groupe_id) REFERENCES groupes(id)
+    CONSTRAINT fk_users_groupes_users FOREIGN KEY(user_id) REFERENCES users(id) ON UPDATE CASCADE,
+    CONSTRAINT fk_added_by_groupes_users FOREIGN KEY(added_by) REFERENCES users(id) ON UPDATE CASCADE,
+    CONSTRAINT fk_groupes_groupes_users FOREIGN KEY(groupe_id) REFERENCES groupes(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- Create votes table
 CREATE TABLE votes (
     id SERIAL PRIMARY KEY,
     prompt_id INT REFERENCES prompts(id),
-    user_id INT REFERENCES users(id),
+    user_id INT REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
     points INT CHECK (points IN (1, 2)),
     date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

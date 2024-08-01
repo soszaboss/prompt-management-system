@@ -11,6 +11,8 @@ This is a REST API application built with Flask. The project includes user manag
 - Group Management
 - Vote and Note System
 - Automated Database Management
+- Role-Based Access Control with Decorators
+- OpenAPI Documentation for the API
 
 ## Requirements
 
@@ -89,6 +91,23 @@ The application will be accessible at `http://127.0.0.1:5000/`.
 - `flask init-db` - Initializes the database
 - `flask createsuperuser` - Creates a superuser
 
+## Testing
+
+- The application includes unit tests to ensure the proper functioning of various features. You can run the tests using:
+
+```bash
+pytest
+```
+
+- The test suite includes coverage for endpoints like user authentication, prompt management, and voting. It also validates that access control decorators are correctly enforcing role-based access restrictions.
+
+## Role-Based Access Control
+
+- The application uses custom decorators to enforce role-based access to specific routes. For example, the `@users_allowed(['admin', 'user'])` decorator restricts access to routes based on the user's role. If a user does not have the required privilege, they will not be able to access the route.
+
+## API Documentation
+
+- The application provides OpenAPI documentation available at the `/swagger-ui` URL. This documentation allows you to explore and test the API endpoints directly from your browser.
 
 ## Acknowledgments
 

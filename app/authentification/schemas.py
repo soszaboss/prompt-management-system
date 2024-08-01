@@ -11,3 +11,6 @@ class UserSchema(ma.Schema):
 class LoginShema(ma.Schema):
     email = ma.fields.Email(required=True, error_messages={"required": {"message": "Email required", "code": 400}})
     password = ma.fields.String(required=True, error_messages={"required": {"message": "Password required", "code": 400}})
+
+class NewAccessTokenSchema(ma.Schema):
+    new_access_token = ma.fields.UUID()

@@ -3,7 +3,7 @@ from flask import jsonify, request
 from flask_smorest import abort
 from app.messages import Message
 from app.db import get_db, validate_password
-from .schemas import UserSchema, LoginShema
+from .schemas import UserSchema, LoginShema, NewAccessTokenSchema
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_jwt_extended import create_access_token, create_refresh_token, decode_token
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
@@ -44,7 +44,7 @@ def register(**kwargs):
     
 @bp.route('/login', methods=['POST'])
 @bp.arguments(LoginShema, location='json', description='log an user.', as_kwargs=True)
-@bp.response(status_code=201, schema=Message, description='sending message after a login attemp')
+@bp.response(status_code=200, schema=Message, description='login process succefully')
 def login(**kwargs):
         email = kwargs.get("email")
         password = kwargs.get("password")
@@ -70,7 +70,7 @@ def login(**kwargs):
 
 
 @bp.route('/refresh-token', methods=['GET'])
-@bp.response(status_code=200, schema=Message, description='sending message after rquest for new access token')
+@bp.response(status_code=200, schema=NewAccessTokenSchema, description='sending message after rquest for new access token')
 @jwt_required(refresh=True)
 def refresh_token():
     id = int(get_jwt_identity())

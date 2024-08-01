@@ -11,7 +11,7 @@ from app.extensions import jwt
 
 load_dotenv()
 
-with open('app\\schema.sql', 'rb') as f:
+with open('./app/schema.sql', 'rb') as f:
     _data_schema = f.read().decode('utf-8')
 
 with open(os.path.join(os.path.dirname(__file__), 'data.sql'), 'rb') as f:

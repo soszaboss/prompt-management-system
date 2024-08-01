@@ -4,6 +4,6 @@ from flask_mail import Mail
 
 jwt = JWTManager()
 
-api = Api()
+api = Api(spec_kwargs={})
 
 mail = Mail()

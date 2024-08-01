@@ -6,20 +6,31 @@ import dotenv
 dotenv.load_dotenv()
 
 class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY')
-    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY')
+    SECRET_KEY = "02b374365cb8418b972b269a9a18982f"
+    JWT_SECRET_KEY = "4a6810c54e6d4ab59a6a3be0b3fbce9b"
     DATABASE = os.environ.get('CONNINFO')
-    API_TITLE = os.environ.get('API_TITLE')
-    API_VERSION = os.environ.get('API_VERSION')
-    OPENAPI_VERSION = os.environ.get('OPENAPI_VERSION')
     JWT_ACCESS_TOKEN_EXPIRES = datetime.timedelta(minutes=60)
-    MAIL_SERVER = os.getenv('MAIL_SERVER')
-    MAIL_PORT = int(os.getenv('MAIL_PORT'))
-    MAIL_USE_TLS = os.getenv('MAIL_USE_TLS').lower() in ['true', '1', 't']
-    MAIL_USE_SSL = os.getenv('MAIL_USE_SSL').lower() in ['true', '1', 't']
-    MAIL_USERNAME = os.getenv('MAIL_USERNAME')
-    MAIL_PASSWORD = os.getenv('MAIL_PASSWORD')
-    MAIL_DEFAULT_SENDER = os.getenv('MAIL_DEFAULT_SENDER')
+    MAIL_SERVER = "smtp.gmail.com"
+    MAIL_PORT = 587
+    MAIL_USE_TLS = True
+    MAIL_USE_SSL = False
+    MAIL_USERNAME = "soszabosssosza@gmail.com"
+    MAIL_PASSWORD = "vsmd qrbz ywuz zbcc"
+    MAIL_DEFAULT_SENDER = "soszabosssosza@gmail.com"
+    PROPAGATE_EXCEPTIONS=True
+    API_TITLE="Prompts API Management"
+    OPENAPI_VERSION="3.0.2"
+    API_VERSION="3.0.2"
+    OPENAPI_JSON_PATH="api-spec.json"
+    OPENAPI_URL_PREFIX="/"
+    OPENAPI_REDOC_PATH="/redoc"
+    OPENAPI_REDOC_URL=(
+        "https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js"
+    )
+    OPENAPI_SWAGGER_UI_PATH="/swagger-ui"
+    OPENAPI_SWAGGER_UI_URL="https://cdn.jsdelivr.net/npm/swagger-ui-dist/"
+    OPENAPI_RAPIDOC_PATH="/rapidoc"
+    OPENAPI_RAPIDOC_URL="https://unpkg.com/rapidoc/dist/rapidoc-min.js"
 
 
 

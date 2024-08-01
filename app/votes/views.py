@@ -6,13 +6,13 @@ from app.votes.schemas import VoteSchema
 from flask.views import MethodView
 from flask_jwt_extended import jwt_required, get_jwt
 from app.decorators import user_allowed, users_allowed
-
+import json
 # Endpoint pour gérer les votes
 @bp.route('/vote/<int:id>')
 class VoteView(MethodView):
     @bp.response(200, description='Get vote by id.')
     @jwt_required()
-    @user_allowed(['admin', 'user'])
+    @users_allowed(['admin', 'user'])
     def get(self, id):
         db = get_db()
         vote = db.execute(
@@ -28,11 +28,11 @@ class VoteView(MethodView):
         ).fetchone()
         if vote is None:
             abort(404, message='Vote does not exist')
-        return vote
+        return json.dumps(vote), 200
 
     @bp.response(204, description='Vote successfully deleted.')
     @jwt_required()
-    @user_allowed('admin')
+    @user_allowed('user')
     def delete(self, id):
         try:
             db = get_db()
@@ -59,9 +59,7 @@ def add_vote(**kwargs):
     if vote.fetchone() is not None:
         abort(400, message='You have already voted for this prompt.')
     try:
-        print('point')
         points = db.execute("SELECT calculate_vote_points(%s, %s);", (user_id, prompt_id)).fetchone()['calculate_vote_points']
-        print(f'points: {points}')
         db.execute(
             "INSERT INTO votes (prompt_id, user_id, points) VALUES (%s, %s, %s);",
             (prompt_id, user_id, int(points))
@@ -70,14 +68,14 @@ def add_vote(**kwargs):
     except:
         abort(500, message='Try later...')
     else:
-        return jsonify({'message': 'Vote added successfully'}), 201
+        return json.dumps({'message': 'Vote added successfully'}), 201
 
 @bp.route('/')
 @jwt_required()
-@user_allowed(['admin', 'user'])
+@users_allowed(['admin', 'user'])
 def get_votes():
+    db = get_db()
     try:
-        db = get_db()
         votes = db.execute("SELECT\
                             v.id,\
                             u.username,\
@@ -86,7 +84,7 @@ def get_votes():
                             FROM votes v\
                             JOIN users u ON v.user_id = u.id\
                             JOIN prompts p ON v.prompt_id = p.id;").fetchall()
-        return jsonify(votes), 200
+        return json.dumps(votes), 200
     except:
         abort(500, message='Try later...')
 

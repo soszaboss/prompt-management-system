@@ -1,5 +1,5 @@
 import json
-from flask import url_for
+
 def test_get_groupe(client, valid_admin_token):
     response = client.get('/groupes/groupe/1', headers={'Authorization': f'Bearer {valid_admin_token}'})
     assert response.status_code == 200

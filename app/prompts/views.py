@@ -1,11 +1,12 @@
 from app.prompts import bp
 from flask import jsonify
+import json
 from flask_smorest import abort
 from app.db import get_db
 from app.prompts.schemas import PromptSchema
 from flask.views import MethodView
 from flask_jwt_extended import jwt_required, get_jwt
-from app.decorators import user_allowed
+from app.decorators import user_allowed, users_allowed
 
 # Endpoint pour gérer les prompts
 @bp.route('/prompt/<int:id>')
@@ -35,13 +36,13 @@ class Prompt(MethodView):
 
     @bp.response(204, description='Prompt successfully deleted.')
     @jwt_required()
-    @user_allowed('admin')
+    @users_allowed(['admin', 'user'])
     def delete(self, id):
+        db = get_db()
+        prompt = db.execute("SELECT * FROM prompts WHERE id = %s;", (id,)).fetchone()
+        if prompt is None:
+            abort(404, message='Prompt does not exist')
         try:
-            db = get_db()
-            prompt = db.execute("SELECT * FROM prompts WHERE id = %s;", (id,)).fetchone()
-            if prompt is None:
-                abort(404, message='Prompt does not exist')
             db.execute("DELETE FROM prompts WHERE id = %s;", (id,))
             return '', 204
         except:
@@ -49,7 +50,7 @@ class Prompt(MethodView):
 
     @bp.arguments(PromptSchema, location='json', description='Update prompt.', as_kwargs=True)
     @jwt_required()
-    @user_allowed('admin')
+    @user_allowed('user')
     def put(self, id, **kwargs):
         try:
             db = get_db()
@@ -67,11 +68,11 @@ class Prompt(MethodView):
         except:
             abort(500, message='Try later...')
         else:
-            return jsonify({'message': 'Prompt updated successfully'}), 200
+            return json.dumps({'message': 'Prompt updated successfully'}), 200
 
 # Endpoint pour afficher les prompts par statut
 @bp.route('/status/<int:status_id>')
-@jwt_required()
+# @jwt_required()
 def get_prompts_by_status(status_id):
     try:
         db = get_db()
@@ -117,10 +118,8 @@ def get_prompts_by_user(user_id):
         else:
             print(prompts)
             if prompts:
-                print('here')
                 return jsonify(prompts), 200
             else:
-                print('there')
                 abort(404, message='User does not exist')
 
 
@@ -167,7 +166,7 @@ def get_prompts():
 # Route pour gérer les statuts des prompts
 @bp.route('/manage_status', methods=['GET'])
 @jwt_required()
-@user_allowed('admin')
+# @user_allowed('admin')
 def manage_status():
     db = get_db()
     db.execute("SELECT manage_prompt_status();")
@@ -191,9 +190,9 @@ def update_status(prompt_id, status_id):
         return jsonify({'message': 'Prompt status updated successfully'}), 200
 
 @bp.route('/prompt/<int:prompt_id>/update-price/<int:prompt_price>', methods=['PUT'])
-# @jwt_required()
-# @user_allowed('admin')
-def update_status(prompt_id, prompt_price):
+@jwt_required()
+@users_allowed('user')
+def update_prompt_price(prompt_id, prompt_price):
     db = get_db()
     if db.execute("select id from prompts where id = %s", (prompt_id,)).fetchone() is None:
         abort(400, message="Prompt does not exist.")

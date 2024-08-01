@@ -6,6 +6,7 @@ from app.notes.schemas import NoteSchema
 from flask.views import MethodView
 from flask_jwt_extended import jwt_required, get_jwt
 from app.decorators import user_allowed
+import json
 
 # Endpoint pour gérer les notes
 @bp.route('/note/<int:id>')
@@ -89,9 +90,8 @@ def add_note(**kwargs):
                 "INSERT INTO notes (note, prompt_id, user_id) VALUES (%s, %s, %s);",
                 (round(float(note), 2), prompt_id, user_id)
             )
-        except Exception as e:
-            print(e)
-            # abort(500, message='Try later...')
+        except:
+            abort(500, message='Try later...')
         else:
             return jsonify({'message': 'Note added successfully'}), 201
     else:

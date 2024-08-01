@@ -70,7 +70,7 @@ CREATE TABLE notes (
     note NUMERIC NOT NULL CHECK (note BETWEEN -10 AND 10),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
-    CONSTRAINT fk_prompt FOREIGN KEY(prompt_id) REFERENCES prompts(id) ON UPDATE CASCADE,
+    CONSTRAINT fk_prompt FOREIGN KEY(prompt_id) REFERENCES prompts(id) ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT fk_user FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -79,10 +79,10 @@ CREATE TABLE groupes(
     id SERIAL PRIMARY KEY,
     name VARCHAR(35) NOT NULL UNIQUE,
     description TEXT,
-    created_by INT NOT NULL,
+    created_by INT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT fk_users_groupes FOREIGN KEY(created_by) REFERENCES users(id) ON UPDATE CASCADE
+    CONSTRAINT fk_users_groupes FOREIGN KEY(created_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
 );
 
 -- Create groupes_users table
@@ -92,7 +92,7 @@ CREATE TABLE groupes_users(
     groupe_id INT NOT NULL,
     added_by INT NOT NULL,
     added_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT fk_users_groupes_users FOREIGN KEY(user_id) REFERENCES users(id) ON UPDATE CASCADE,
+    CONSTRAINT fk_users_groupes_users FOREIGN KEY(user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT fk_added_by_groupes_users FOREIGN KEY(added_by) REFERENCES users(id) ON UPDATE CASCADE,
     CONSTRAINT fk_groupes_groupes_users FOREIGN KEY(groupe_id) REFERENCES groupes(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
@@ -100,7 +100,7 @@ CREATE TABLE groupes_users(
 -- Create votes table
 CREATE TABLE votes (
     id SERIAL PRIMARY KEY,
-    prompt_id INT REFERENCES prompts(id),
+    prompt_id INT REFERENCES prompts(id) ON DELETE CASCADE ON UPDATE CASCADE,
     user_id INT REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
     points INT CHECK (points IN (1, 2)),
     date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP

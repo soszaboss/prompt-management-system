@@ -14,7 +14,7 @@ from app.send_email import send_activation_email
 
 @bp.route('/register', methods=['POST'])
 @bp.arguments(UserSchema, location='json', description='Registring user.', as_kwargs=True)
-@bp.response(status_code=201, schema=Message, description='sending message after a registring attemp')
+@bp.response(status_code=201, description='sending message after a registring attemp')
 # @jwt_required()
 def register(**kwargs):
         username = kwargs.get("username").strip()

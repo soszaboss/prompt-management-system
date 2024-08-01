@@ -7,6 +7,7 @@ from app.groupes.schemas import GroupeSchema
 from flask.views import MethodView
 from flask_jwt_extended import jwt_required, get_jwt
 from app.decorators import user_allowed, users_allowed
+import json
 
 @bp.route('/groupe/<int:id>')
 class Groupe(MethodView):
@@ -48,7 +49,7 @@ class Groupe(MethodView):
         # Mettre à jour le groupe dans la base de données
         db.execute("UPDATE groupes SET name=%s, description=%s WHERE id=%s;", (new_name, new_description, id))
         
-        return '', 200
+        return json.dumps({'message': 'Groupe updated successfully.'}), 200
 
     @bp.response(status_code=200, schema=GroupeSchema, description='Message shows groupe details.')
     @jwt_required()
@@ -89,8 +90,8 @@ def add_groupe(**kwargs):
     else:
         return jsonify({'message': 'Groupe added successfully'}), 201
 
-@bp.route('/groupe/<int:groupe_id>/user/<int:user_id>', methods=['POST'])
-@jwt_required()
-@user_allowed('admin')
-def add_groupe(groupe_id, user_id):
-    pass
+# @bp.route('/groupe/<int:groupe_id>/user/<int:user_id>', methods=['POST'])
+# @jwt_required()
+# @user_allowed('admin')
+# def add_groupe(groupe_id, user_id):
+#     pass

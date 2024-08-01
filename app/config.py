@@ -1,4 +1,3 @@
-import uuid
 import datetime
 import os
 import dotenv
@@ -6,8 +5,8 @@ import dotenv
 dotenv.load_dotenv()
 
 class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY')
-    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY')
+    SECRET_KEY = "02b374365cb8418b972b269a9a18982f"
+    JWT_SECRET_KEY = "4a6810c54e6d4ab59a6a3be0b3fbce9b"
     DATABASE = os.environ.get('CONNINFO')
     JWT_ACCESS_TOKEN_EXPIRES = datetime.timedelta(minutes=60)
     MAIL_SERVER = os.getenv('MAIL_SERVER')
